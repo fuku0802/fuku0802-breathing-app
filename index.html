@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>息 — 呼吸リラクゼーション</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#e8f1f2;
+  --ink-dim:rgba(232,241,242,.55);
+  --ink-faint:rgba(232,241,242,.28);
+  --glow-a:#5eead4;
+  --glow-b:#818cf8;
+  --bg-0:#04070f;
+  --bg-1:#0a1226;
+  --bg-2:#0e1f33;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  color:var(--ink);
+  background:radial-gradient(120% 90% at 50% 110%,var(--bg-2) 0%,var(--bg-1) 45%,var(--bg-0) 100%);
+  overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+
+/* ---------- 背景の星と霧 ---------- */
+.aurora{
+  position:fixed;inset:-30%;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(40% 30% at 30% 25%,rgba(94,234,212,.07),transparent 70%),
+    radial-gradient(45% 35% at 72% 70%,rgba(129,140,248,.09),transparent 70%);
+  animation:drift 26s ease-in-out infinite alternate;
+  filter:blur(10px);
+}
+@keyframes drift{
+  from{transform:translate3d(-2%, -1%,0) rotate(-1deg)}
+  to{transform:translate3d(2%, 2%,0) rotate(1.5deg)}
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ---------- レイアウト ---------- */
+.app{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0;width:100%;max-width:560px;padding:24px}
+header{position:fixed;top:28px;left:0;right:0;text-align:center;z-index:3}
+header h1{
+  font-family:'Shippori Mincho',serif;font-weight:500;font-size:15px;
+  letter-spacing:.55em;text-indent:.55em;color:var(--ink-dim);
+}
+header p{font-size:11px;letter-spacing:.3em;text-indent:.3em;color:var(--ink-faint);margin-top:8px}
+
+/* ---------- 呼吸オーブ ---------- */
+.stage{position:relative;width:min(74vw,340px);aspect-ratio:1;display:grid;place-items:center}
+.ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(232,241,242,.07);
+  transform:scale(var(--s,1));
+}
+.ring.r2{inset:-13%;border-color:rgba(232,241,242,.045)}
+.ring.r3{inset:-27%;border-color:rgba(232,241,242,.03)}
+
+svg.progress{position:absolute;inset:-6.5%;transform:rotate(-90deg);overflow:visible}
+svg.progress circle{fill:none;stroke-width:1.6}
+.track{stroke:rgba(232,241,242,.08)}
+.arc{
+  stroke:url(#grad);stroke-linecap:round;
+  filter:drop-shadow(0 0 6px rgba(94,234,212,.45));
+  transition:opacity .6s;
+}
+
+.orb-wrap{position:relative;width:58%;aspect-ratio:1;display:grid;place-items:center;will-change:transform}
+.orb{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at 38% 32%,rgba(255,255,255,.55),rgba(255,255,255,0) 32%),
+    radial-gradient(circle at 50% 60%,rgba(94,234,212,.85),rgba(99,102,241,.75) 62%,rgba(30,27,75,.9) 100%);
+  box-shadow:
+    0 0 60px rgba(94,234,212,.35),
+    0 0 140px rgba(99,102,241,.28),
+    inset 0 0 46px rgba(255,255,255,.16);
+}
+.halo{
+  position:absolute;inset:-26%;border-radius:50%;
+  background:radial-gradient(circle,rgba(94,234,212,.22),rgba(129,140,248,.1) 50%,transparent 72%);
+  filter:blur(14px);
+}
+.breath-pulse{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(94,234,212,.5);
+  opacity:0;transform:scale(1);
+}
+.breath-pulse.go{animation:pulse 4s ease-out forwards}
+@keyframes pulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
+
+/* ---------- フェーズ表示 ---------- */
+.phase{
+  position:absolute;z-index:4;text-align:center;pointer-events:none;
+}
+.phase .word{
+  font-family:'Shippori Mincho',serif;font-size:clamp(26px,7vw,34px);font-weight:600;
+  letter-spacing:.3em;text-indent:.3em;color:var(--bg-0);
+  text-shadow:0 1px 0 rgba(255,255,255,.25);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.phase .count{
+  margin-top:6px;font-size:13px;letter-spacing:.2em;text-indent:.2em;
+  color:rgba(4,7,15,.6);font-weight:500;font-variant-numeric:tabular-nums;
+}
+.phase.idle .word{color:var(--ink);text-shadow:0 0 24px rgba(94,234,212,.4);font-size:clamp(18px,4.6vw,22px)}
+.phase.idle .count{color:var(--ink-faint)}
+.fade-swap{opacity:0;transform:translateY(6px)}
+
+/* ---------- コントロール ---------- */
+.controls{margin-top:64px;display:flex;flex-direction:column;align-items:center;gap:22px;z-index:3}
+button.main{
+  font-family:inherit;font-size:13px;letter-spacing:.4em;text-indent:.4em;
+  color:var(--ink);background:rgba(232,241,242,.05);
+  border:1px solid rgba(232,241,242,.18);border-radius:999px;
+  padding:15px 52px;cursor:pointer;backdrop-filter:blur(8px);
+  transition:background .35s,border-color .35s,box-shadow .35s,transform .15s;
+}
+button.main:hover{background:rgba(94,234,212,.1);border-color:rgba(94,234,212,.45);box-shadow:0 0 28px rgba(94,234,212,.18)}
+button.main:active{transform:scale(.97)}
+button.main:focus-visible{outline:2px solid var(--glow-a);outline-offset:4px}
+
+.stats{display:flex;gap:42px}
+.stat{text-align:center}
+.stat .v{font-family:'Shippori Mincho',serif;font-size:19px;color:var(--ink-dim);font-variant-numeric:tabular-nums;letter-spacing:.08em}
+.stat .l{font-size:10px;letter-spacing:.28em;text-indent:.28em;color:var(--ink-faint);margin-top:5px}
+
+footer{position:fixed;bottom:22px;left:0;right:0;text-align:center;font-size:10.5px;letter-spacing:.24em;text-indent:.24em;color:var(--ink-faint);z-index:3}
+
+@media (prefers-reduced-motion:reduce){
+  .aurora{animation:none}
+  .breath-pulse.go{animation:none}
+}
+@media (max-height:640px){
+  .controls{margin-top:36px}
+  header{top:16px}
+  footer{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="aurora"></div>
+<canvas id="stars"></canvas>
+
+<header>
+  <h1>息 — IKI</h1>
+  <p>4 · 4 · 8 BREATHING</p>
+</header>
+
+<main class="app">
+  <div class="stage">
+    <div class="ring r3"></div>
+    <div class="ring r2"></div>
+    <div class="ring"></div>
+
+    <svg class="progress" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#5eead4"/>
+          <stop offset="100%" stop-color="#818cf8"/>
+        </linearGradient>
+      </defs>
+      <circle class="track" cx="50" cy="50" r="49"/>
+      <circle class="arc" id="arc" cx="50" cy="50" r="49"
+              stroke-dasharray="307.9" stroke-dashoffset="307.9"/>
+    </svg>
+
+    <div class="orb-wrap" id="orb">
+      <div class="halo"></div>
+      <div class="orb"></div>
+      <div class="breath-pulse" id="pulse"></div>
+    </div>
+
+    <div class="phase idle" id="phase">
+      <div class="word" id="word">はじめる</div>
+      <div class="count" id="count">心を、いまここに</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="main" id="btn" aria-label="セッションを開始">開始</button>
+    <div class="stats" aria-live="off">
+      <div class="stat"><div class="v" id="cycles">0</div><div class="l">サイクル</div></div>
+      <div class="stat"><div class="v" id="time">0:00</div><div class="l">経過時間</div></div>
+    </div>
+  </div>
+</main>
+
+<footer>静かな場所で、姿勢を楽に。</footer>
+
+<script>
+'use strict';
+
+/* ===== 星空 ===== */
+const cv = document.getElementById('stars');
+const cx = cv.getContext('2d');
+let stars = [];
+function buildStars(){
+  cv.width = innerWidth * devicePixelRatio;
+  cv.height = innerHeight * devicePixelRatio;
+  cx.scale(devicePixelRatio, devicePixelRatio);
+  stars = Array.from({length: Math.min(110, innerWidth/9)}, () => ({
+    x: Math.random()*innerWidth,
+    y: Math.random()*innerHeight,
+    r: Math.random()*1.1 + .2,
+    p: Math.random()*Math.PI*2,
+    s: Math.random()*.6 + .25
+  }));
+}
+buildStars();
+addEventListener('resize', buildStars);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function drawStars(t){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  for(const s of stars){
+    const a = reduceMotion ? .5 : .25 + .45*(0.5 + 0.5*Math.sin(t/1400*s + s.p));
+    cx.beginPath();
+    cx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    cx.fillStyle = `rgba(220,235,240,${a})`;
+    cx.fill();
+  }
+}
+
+/* ===== 呼吸エンジン ===== */
+const PHASES = [
+  {key:'in',   label:'吸って', dur:4000, from:1.0,  to:1.55},
+  {key:'hold', label:'止めて', dur:4000, from:1.55, to:1.55},
+  {key:'out',  label:'吐いて', dur:8000, from:1.55, to:1.0}
+];
+const CYCLE = PHASES.reduce((a,p)=>a+p.dur,0);
+const ARC_LEN = 307.9;
+
+const orb   = document.getElementById('orb');
+const arc   = document.getElementById('arc');
+const word  = document.getElementById('word');
+const count = document.getElementById('count');
+const phaseBox = document.getElementById('phase');
+const btn   = document.getElementById('btn');
+const pulse = document.getElementById('pulse');
+const cyclesEl = document.getElementById('cycles');
+const timeEl   = document.getElementById('time');
+
+let running = false;
+let startT = 0, pausedAt = 0, elapsedBase = 0;
+let lastPhaseKey = null, cycles = 0, lastCycleIdx = -1;
+let raf = null;
+
+const easeInOut = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+
+function setWord(label, swap=true){
+  if(!swap){ word.textContent = label; return; }
+  word.classList.add('fade-swap');
+  setTimeout(()=>{
+    word.textContent = label;
+    word.classList.remove('fade-swap');
+  }, 240);
+}
+
+function loop(now){
+  drawStars(now);
+  if(running){
+    const elapsed = elapsedBase + (now - startT);
+    const inCycle = elapsed % CYCLE;
+    const cycleIdx = Math.floor(elapsed / CYCLE);
+
+    if(cycleIdx !== lastCycleIdx && cycleIdx > 0 && lastCycleIdx >= 0){
+      cycles = cycleIdx;
+      cyclesEl.textContent = cycles;
+    }
+    lastCycleIdx = cycleIdx;
+
+    let acc = 0, phase = PHASES[0], local = 0;
+    for(const p of PHASES){
+      if(inCycle < acc + p.dur){ phase = p; local = (inCycle - acc) / p.dur; break; }
+      acc += p.dur;
+    }
+
+    if(phase.key !== lastPhaseKey){
+      lastPhaseKey = phase.key;
+      setWord(phase.label);
+      if(phase.key === 'in' && !reduceMotion){
+        pulse.classList.remove('go'); void pulse.offsetWidth; pulse.classList.add('go');
+      }
+    }
+
+    const scale = phase.from + (phase.to - phase.from) * (reduceMotion ? local : easeInOut(local));
+    orb.style.transform = `scale(${scale.toFixed(4)})`;
+
+    const remain = Math.ceil((phase.dur - local*phase.dur)/1000);
+    count.textContent = remain;
+
+    arc.style.strokeDashoffset = ARC_LEN * (1 - inCycle / CYCLE);
+
+    const totalSec = Math.floor(elapsed/1000);
+    timeEl.textContent = `${Math.floor(totalSec/60)}:${String(totalSec%60).padStart(2,'0')}`;
+  }
+  raf = requestAnimationFrame(loop);
+}
+raf = requestAnimationFrame(loop);
+
+btn.addEventListener('click', () => {
+  if(!running){
+    running = true;
+    startT = performance.now();
+    phaseBox.classList.remove('idle');
+    lastPhaseKey = null;
+    btn.textContent = '一時停止';
+    btn.setAttribute('aria-label','セッションを一時停止');
+    arc.style.opacity = 1;
+  } else {
+    running = false;
+    elapsedBase += performance.now() - startT;
+    btn.textContent = '再開';
+    btn.setAttribute('aria-label','セッションを再開');
+    setWord('一時停止中');
+    count.textContent = 'そのままで大丈夫';
+  }
+});
+</script>
+</body>
+</html>
