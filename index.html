@@ -73,7 +73,9 @@ svg.progress circle{fill:none;stroke-width:1.6}
   transition:opacity .6s;
 }
 
-.orb-wrap{position:relative;width:58%;aspect-ratio:1;display:grid;place-items:center;will-change:transform}
+.orb-wrap{position:relative;width:58%;aspect-ratio:1;display:grid;place-items:center;will-change:transform,filter;transition:filter 2s ease}
+.orb-wrap[data-phase="hold"]{filter:hue-rotate(52deg)}
+.orb-wrap[data-phase="out"]{filter:hue-rotate(148deg)}
 .orb{
   position:absolute;inset:0;border-radius:50%;
   background:
@@ -286,6 +288,10 @@ function loop(now){
 
     if(phase.key !== lastPhaseKey){
       lastPhaseKey = phase.key;
+      orb.dataset.phase = phase.key;
+      const pc = {in:['#5eead4','#38bdf8'],hold:['#a78bfa','#818cf8'],out:['#fb7185','#f97316']};
+      document.querySelector('#grad stop:first-child').setAttribute('stop-color', pc[phase.key][0]);
+      document.querySelector('#grad stop:last-child').setAttribute('stop-color', pc[phase.key][1]);
       setWord(phase.label);
       if(phase.key === 'in' && !reduceMotion){
         pulse.classList.remove('go'); void pulse.offsetWidth; pulse.classList.add('go');
