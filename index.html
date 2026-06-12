@@ -69,33 +69,53 @@ svg.progress circle{fill:none;stroke-width:1.6}
 .track{stroke:rgba(232,241,242,.08)}
 .arc{
   stroke:url(#grad);stroke-linecap:round;
-  filter:drop-shadow(0 0 6px rgba(94,234,212,.45));
+  filter:drop-shadow(0 0 6px rgba(167,139,250,.45));
   transition:opacity .6s;
 }
 
-.orb-wrap{position:relative;width:58%;aspect-ratio:1;display:grid;place-items:center;will-change:transform,filter;transition:filter 2s ease}
-.orb-wrap[data-phase="hold"]{filter:hue-rotate(52deg)}
-.orb-wrap[data-phase="out"]{filter:hue-rotate(148deg)}
-.orb{
-  position:absolute;inset:0;border-radius:50%;
+.orb-wrap{position:relative;width:58%;aspect-ratio:1;display:grid;place-items:center;will-change:transform}
+.orb,.halo{position:absolute;border-radius:50%;opacity:0;transition:opacity 2.4s ease}
+.orb{inset:0}
+.halo{inset:-26%;filter:blur(14px)}
+/* 吸う = ムラサキ */
+.o-in{
   background:
     radial-gradient(circle at 38% 32%,rgba(255,255,255,.55),rgba(255,255,255,0) 32%),
-    radial-gradient(circle at 50% 60%,rgba(94,234,212,.85),rgba(99,102,241,.75) 62%,rgba(30,27,75,.9) 100%);
-  box-shadow:
-    0 0 60px rgba(94,234,212,.35),
-    0 0 140px rgba(99,102,241,.28),
-    inset 0 0 46px rgba(255,255,255,.16);
+    radial-gradient(circle at 50% 60%,rgba(196,181,253,.88),rgba(139,92,246,.78) 62%,rgba(46,16,101,.92) 100%);
+  box-shadow:0 0 60px rgba(167,139,250,.38),0 0 140px rgba(139,92,246,.26),inset 0 0 46px rgba(255,255,255,.16);
 }
-.halo{
-  position:absolute;inset:-26%;border-radius:50%;
-  background:radial-gradient(circle,rgba(94,234,212,.22),rgba(129,140,248,.1) 50%,transparent 72%);
-  filter:blur(14px);
+/* 止める = ブルー */
+.o-hold{
+  background:
+    radial-gradient(circle at 38% 32%,rgba(255,255,255,.55),rgba(255,255,255,0) 32%),
+    radial-gradient(circle at 50% 60%,rgba(125,211,252,.88),rgba(59,130,246,.78) 62%,rgba(23,37,84,.92) 100%);
+  box-shadow:0 0 60px rgba(96,165,250,.38),0 0 140px rgba(59,130,246,.26),inset 0 0 46px rgba(255,255,255,.16);
 }
+/* 吐く = グリーン */
+.o-out{
+  background:
+    radial-gradient(circle at 38% 32%,rgba(255,255,255,.55),rgba(255,255,255,0) 32%),
+    radial-gradient(circle at 50% 60%,rgba(110,231,183,.88),rgba(16,185,129,.78) 62%,rgba(6,58,46,.92) 100%);
+  box-shadow:0 0 60px rgba(52,211,153,.38),0 0 140px rgba(16,185,129,.26),inset 0 0 46px rgba(255,255,255,.16);
+}
+.h-in{background:radial-gradient(circle,rgba(167,139,250,.24),rgba(139,92,246,.1) 50%,transparent 72%)}
+.h-hold{background:radial-gradient(circle,rgba(96,165,250,.24),rgba(59,130,246,.1) 50%,transparent 72%)}
+.h-out{background:radial-gradient(circle,rgba(52,211,153,.24),rgba(16,185,129,.1) 50%,transparent 72%)}
+body[data-phase="in"] .o-in,body[data-phase="in"] .h-in,
+body[data-phase="hold"] .o-hold,body[data-phase="hold"] .h-hold,
+body[data-phase="out"] .o-out,body[data-phase="out"] .h-out{opacity:1}
+/* 画面全体がフェーズ色でほのかに呼吸する */
+.wash{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0;transition:opacity 3s ease}
+.w-in{background:radial-gradient(80% 60% at 50% 45%,rgba(139,92,246,.10),transparent 75%)}
+.w-hold{background:radial-gradient(80% 60% at 50% 45%,rgba(59,130,246,.10),transparent 75%)}
+.w-out{background:radial-gradient(80% 60% at 50% 45%,rgba(16,185,129,.10),transparent 75%)}
+body[data-phase="in"] .w-in,body[data-phase="hold"] .w-hold,body[data-phase="out"] .w-out{opacity:1}
 .breath-pulse{
   position:absolute;inset:0;border-radius:50%;
-  border:1px solid rgba(94,234,212,.5);
+  border:1px solid rgba(167,139,250,.55);
   opacity:0;transform:scale(1);
 }
+#grad stop{transition:stop-color 1.8s ease}
 .breath-pulse.go{animation:pulse 4s ease-out forwards}
 @keyframes pulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
 
@@ -135,6 +155,15 @@ button.main:focus-visible{outline:2px solid var(--glow-a);outline-offset:4px}
 .stat .v{font-family:'Shippori Mincho',serif;font-size:19px;color:var(--ink-dim);font-variant-numeric:tabular-nums;letter-spacing:.08em}
 .stat .l{font-size:10px;letter-spacing:.28em;text-indent:.28em;color:var(--ink-faint);margin-top:5px}
 
+.legend{display:flex;gap:24px;font-size:11px;letter-spacing:.16em;color:var(--ink-faint)}
+.legend span{display:flex;align-items:center;gap:7px;opacity:.5;transition:opacity .9s,color .9s}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block;transition:box-shadow .9s}
+.d-in{background:#a78bfa}.d-hold{background:#60a5fa}.d-out{background:#34d399}
+body[data-phase="in"] .l-in,body[data-phase="hold"] .l-hold,body[data-phase="out"] .l-out{opacity:1;color:var(--ink-dim)}
+body[data-phase="in"] .d-in{box-shadow:0 0 10px rgba(167,139,250,.8)}
+body[data-phase="hold"] .d-hold{box-shadow:0 0 10px rgba(96,165,250,.8)}
+body[data-phase="out"] .d-out{box-shadow:0 0 10px rgba(52,211,153,.8)}
+
 footer{position:fixed;bottom:22px;left:0;right:0;text-align:center;font-size:10.5px;letter-spacing:.24em;text-indent:.24em;color:var(--ink-faint);z-index:3}
 
 @media (prefers-reduced-motion:reduce){
@@ -148,9 +177,12 @@ footer{position:fixed;bottom:22px;left:0;right:0;text-align:center;font-size:10.
 }
 </style>
 </head>
-<body>
+<body data-phase="in">
 
 <div class="aurora"></div>
+<div class="wash w-in"></div>
+<div class="wash w-hold"></div>
+<div class="wash w-out"></div>
 <canvas id="stars"></canvas>
 
 <header>
@@ -167,8 +199,8 @@ footer{position:fixed;bottom:22px;left:0;right:0;text-align:center;font-size:10.
     <svg class="progress" viewBox="0 0 100 100" aria-hidden="true">
       <defs>
         <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#5eead4"/>
-          <stop offset="100%" stop-color="#818cf8"/>
+          <stop offset="0%" stop-color="#c4b5fd"/>
+          <stop offset="100%" stop-color="#8b5cf6"/>
         </linearGradient>
       </defs>
       <circle class="track" cx="50" cy="50" r="49"/>
@@ -177,8 +209,12 @@ footer{position:fixed;bottom:22px;left:0;right:0;text-align:center;font-size:10.
     </svg>
 
     <div class="orb-wrap" id="orb">
-      <div class="halo"></div>
-      <div class="orb"></div>
+      <div class="halo h-in"></div>
+      <div class="halo h-hold"></div>
+      <div class="halo h-out"></div>
+      <div class="orb o-in"></div>
+      <div class="orb o-hold"></div>
+      <div class="orb o-out"></div>
       <div class="breath-pulse" id="pulse"></div>
     </div>
 
@@ -193,6 +229,11 @@ footer{position:fixed;bottom:22px;left:0;right:0;text-align:center;font-size:10.
     <div class="stats" aria-live="off">
       <div class="stat"><div class="v" id="cycles">0</div><div class="l">サイクル</div></div>
       <div class="stat"><div class="v" id="time">0:00</div><div class="l">経過時間</div></div>
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span class="l-in"><i class="d-in"></i>吸う</span>
+      <span class="l-hold"><i class="d-hold"></i>止める</span>
+      <span class="l-out"><i class="d-out"></i>吐く</span>
     </div>
   </div>
 </main>
@@ -288,8 +329,8 @@ function loop(now){
 
     if(phase.key !== lastPhaseKey){
       lastPhaseKey = phase.key;
-      orb.dataset.phase = phase.key;
-      const pc = {in:['#5eead4','#38bdf8'],hold:['#a78bfa','#818cf8'],out:['#fb7185','#f97316']};
+      document.body.dataset.phase = phase.key;
+      const pc = {in:['#c4b5fd','#8b5cf6'],hold:['#7dd3fc','#3b82f6'],out:['#6ee7b7','#10b981']};
       document.querySelector('#grad stop:first-child').setAttribute('stop-color', pc[phase.key][0]);
       document.querySelector('#grad stop:last-child').setAttribute('stop-color', pc[phase.key][1]);
       setWord(phase.label);
