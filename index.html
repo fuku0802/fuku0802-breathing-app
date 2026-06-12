@@ -98,6 +98,14 @@ svg.progress circle{fill:none;stroke-width:1.6}
     radial-gradient(circle at 50% 60%,rgba(110,231,183,.88),rgba(16,185,129,.78) 62%,rgba(6,58,46,.92) 100%);
   box-shadow:0 0 60px rgba(52,211,153,.38),0 0 140px rgba(16,185,129,.26),inset 0 0 46px rgba(255,255,255,.16);
 }
+/* 吐ききるほど明るくなるミントのレイヤー（JSが毎フレーム制御） */
+.o-out2{
+  background:
+    radial-gradient(circle at 38% 32%,rgba(255,255,255,.62),rgba(255,255,255,0) 34%),
+    radial-gradient(circle at 50% 60%,rgba(209,250,229,.92),rgba(110,231,183,.82) 62%,rgba(16,185,129,.85) 100%);
+  box-shadow:0 0 70px rgba(110,231,183,.45),0 0 160px rgba(52,211,153,.3),inset 0 0 50px rgba(255,255,255,.22);
+}
+.h-out2{background:radial-gradient(circle,rgba(167,243,208,.3),rgba(110,231,183,.12) 50%,transparent 72%)}
 .h-in{background:radial-gradient(circle,rgba(167,139,250,.24),rgba(139,92,246,.1) 50%,transparent 72%)}
 .h-hold{background:radial-gradient(circle,rgba(96,165,250,.24),rgba(59,130,246,.1) 50%,transparent 72%)}
 .h-out{background:radial-gradient(circle,rgba(52,211,153,.24),rgba(16,185,129,.1) 50%,transparent 72%)}
@@ -158,7 +166,7 @@ button.main:focus-visible{outline:2px solid var(--glow-a);outline-offset:4px}
 .legend{display:flex;gap:24px;font-size:11px;letter-spacing:.16em;color:var(--ink-faint)}
 .legend span{display:flex;align-items:center;gap:7px;opacity:.5;transition:opacity .9s,color .9s}
 .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;transition:box-shadow .9s}
-.d-in{background:#a78bfa}.d-hold{background:#60a5fa}.d-out{background:#34d399}
+.d-in{background:#a78bfa}.d-hold{background:#60a5fa}.d-out{background:linear-gradient(135deg,#10b981,#a7f3d0)}
 body[data-phase="in"] .l-in,body[data-phase="hold"] .l-hold,body[data-phase="out"] .l-out{opacity:1;color:var(--ink-dim)}
 body[data-phase="in"] .d-in{box-shadow:0 0 10px rgba(167,139,250,.8)}
 body[data-phase="hold"] .d-hold{box-shadow:0 0 10px rgba(96,165,250,.8)}
@@ -255,9 +263,11 @@ button.mode.active{color:var(--ink);border-color:rgba(167,139,250,.55);backgroun
       <div class="halo h-in"></div>
       <div class="halo h-hold"></div>
       <div class="halo h-out"></div>
+      <div class="halo h-out2" id="haloLight"></div>
       <div class="orb o-in"></div>
       <div class="orb o-hold"></div>
       <div class="orb o-out"></div>
+      <div class="orb o-out2" id="orbLight"></div>
       <div class="breath-pulse" id="pulse"></div>
     </div>
 
@@ -347,9 +357,9 @@ function drawStars(t){
 /* ===== 呼吸エンジン ===== */
 function buildPhases(i,h,o){
   return [
-    {key:'in',   label:'吸って', dur:i*1000, from:1.0,  to:1.55},
-    {key:'hold', label:'止めて', dur:h*1000, from:1.55, to:1.55},
-    {key:'out',  label:'吐いて', dur:o*1000, from:1.55, to:1.0}
+    {key:'in',   label:'吸って', dur:i*1000, from:1.0,  to:1.55, yf:-10, yt:0},
+    {key:'hold', label:'止めて', dur:h*1000, from:1.55, to:1.55, yf:0,   yt:0},
+    {key:'out',  label:'吐いて', dur:o*1000, from:1.55, to:1.0,  yf:0,   yt:-10}
   ].filter(p => p.dur > 0);
 }
 let PHASES = buildPhases(4,4,8);
@@ -365,6 +375,32 @@ const btn   = document.getElementById('btn');
 const pulse = document.getElementById('pulse');
 const cyclesEl = document.getElementById('cycles');
 const timeEl   = document.getElementById('time');
+
+const orbLight = document.getElementById('orbLight');
+const haloLight = document.getElementById('haloLight');
+
+/* ===== 吐く息とともに昇る光の粒 ===== */
+let motes = [];
+function spawnMote(){
+  const rect = orb.getBoundingClientRect();
+  const cxp = rect.left + rect.width/2, cyp = rect.top + rect.height/2;
+  const a = Math.random()*Math.PI*2, d = rect.width*0.5*(0.55+Math.random()*0.45);
+  motes.push({
+    x:cxp+Math.cos(a)*d, y:cyp+Math.sin(a)*d*0.8,
+    vy:-(0.3+Math.random()*0.45), w:Math.random()*Math.PI*2,
+    r:0.8+Math.random()*1.6, life:1
+  });
+}
+function drawMotes(t){
+  for(const m of motes){
+    m.y += m.vy; m.x += Math.sin(t/600 + m.w)*0.18; m.life -= 0.006;
+    cx.beginPath(); cx.arc(m.x, m.y, m.r, 0, Math.PI*2);
+    cx.fillStyle = `rgba(167,243,208,${Math.max(0,m.life)*.8})`;
+    cx.shadowColor = 'rgba(110,231,183,.8)'; cx.shadowBlur = 6;
+    cx.fill(); cx.shadowBlur = 0;
+  }
+  motes = motes.filter(m => m.life > 0 && m.y > -10);
+}
 
 let running = false;
 let startT = 0, pausedAt = 0, elapsedBase = 0;
@@ -384,6 +420,7 @@ function setWord(label, swap=true){
 
 function loop(now){
   drawStars(now);
+  drawMotes(now);
   if(running){
     const elapsed = elapsedBase + (now - startT);
     const inCycle = elapsed % CYCLE;
@@ -404,7 +441,7 @@ function loop(now){
     if(phase.key !== lastPhaseKey){
       lastPhaseKey = phase.key;
       document.body.dataset.phase = phase.key;
-      const pc = {in:['#c4b5fd','#8b5cf6'],hold:['#7dd3fc','#3b82f6'],out:['#6ee7b7','#10b981']};
+      const pc = {in:['#c4b5fd','#8b5cf6'],hold:['#7dd3fc','#3b82f6'],out:['#a7f3d0','#10b981']};
       document.querySelector('#grad stop:first-child').setAttribute('stop-color', pc[phase.key][0]);
       document.querySelector('#grad stop:last-child').setAttribute('stop-color', pc[phase.key][1]);
       setWord(phase.label);
@@ -413,8 +450,20 @@ function loop(now){
       }
     }
 
-    const scale = phase.from + (phase.to - phase.from) * (reduceMotion ? local : easeInOut(local));
-    orb.style.transform = `scale(${scale.toFixed(4)})`;
+    const eased = reduceMotion ? local : easeInOut(local);
+    const scale = phase.from + (phase.to - phase.from) * eased;
+    const y = reduceMotion ? 0 : (phase.yf + (phase.yt - phase.yf) * eased);
+    orb.style.transform = `translateY(${y.toFixed(2)}px) scale(${scale.toFixed(4)})`;
+
+    /* 吐ききるほど、緑が明るく軽くなる */
+    if(phase.key === 'out'){
+      orbLight.style.transition = 'none'; haloLight.style.transition = 'none';
+      orbLight.style.opacity = eased; haloLight.style.opacity = eased;
+      if(!reduceMotion && motes.length < 40 && Math.random() < 0.14) spawnMote();
+    } else if(parseFloat(orbLight.style.opacity) > 0){
+      orbLight.style.transition = 'opacity 2.4s ease'; haloLight.style.transition = 'opacity 2.4s ease';
+      orbLight.style.opacity = 0; haloLight.style.opacity = 0;
+    }
 
     const remain = Math.ceil((phase.dur - local*phase.dur)/1000);
     count.textContent = remain;
